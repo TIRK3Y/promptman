@@ -1,0 +1,28 @@
+/target
+
+# Local development profiles (PROMPTMAN_DATA_DIR)
+.dev-profile/
+*.db
+
+# Legacy Tauri/React frontend output (not part of the Rust app)
+node_modules/
+dist/
+*.log
+**/*.rs.bk
+*.pdb
+
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# IDE & Editor configurations
+.idea/
+.vscode/
+*.swp
+*.swo

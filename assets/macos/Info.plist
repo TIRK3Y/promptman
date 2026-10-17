@@ -22,6 +22,8 @@
     <string>1</string>
     <key>LSMinimumSystemVersion</key>
     <string>10.15</string>
+    <key>CFBundleIconFile</key>
+    <string>icon.icns</string>
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSSupportsAutomaticGraphicsSwitching</key>

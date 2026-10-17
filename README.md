@@ -85,11 +85,28 @@ CLI         the same engine for scripts and CI, table or JSONL output, exit code
 
 ---
 
-## 04 Installation
+## 04 Installation & Downloads
 
-PromptMan is distributed as source. Building takes a few minutes the first time.
+### 4.1 Pre-built Binaries (Direct Download)
 
-### 4.1 Requirements
+You can download ready-to-run packages directly:
+
+| Platform | Download Package | Format | Notes |
+|---|---|---|---|
+| **Windows** | [`PromptMan-v1.0.0-windows-x64.zip`](https://github.com/TIRK3Y/promptman/releases/latest/download/PromptMan-v1.0.0-windows-x64.zip) | Portable `.zip` | Unpack & double-click `promptman.exe` |
+| **macOS** | [`PromptMan-v1.0.0-macos-universal.dmg`](https://github.com/TIRK3Y/promptman/releases/latest/download/PromptMan-v1.0.0-macos-universal.dmg) | Disk Image `.dmg` | Universal (Apple Silicon & Intel) |
+| **Linux (Debian/Ubuntu)** | [`PromptMan-v1.0.0-linux-amd64.deb`](https://github.com/TIRK3Y/promptman/releases/latest/download/PromptMan-v1.0.0-linux-amd64.deb) | `.deb` package | `sudo apt install ./PromptMan-*.deb` |
+| **Linux (Portable)** | [`PromptMan-v1.0.0-linux-x86_64.tar.gz`](https://github.com/TIRK3Y/promptman/releases/latest/download/PromptMan-v1.0.0-linux-x86_64.tar.gz) | `.tar.gz` archive | Unpack & run `./promptman` |
+
+For automated multi-platform release scripts and website deployment details, see the [Distribution & Downloads Guide](docs/DISTRIBUTION_AND_DOWNLOADS.md).
+
+---
+
+### 4.2 Build from Source
+
+Building takes a few minutes the first time.
+
+### 4.3 Requirements
 
 | Component | Version | Notes |
 |---|---|---|

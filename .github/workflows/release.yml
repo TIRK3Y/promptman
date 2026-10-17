@@ -1,0 +1,172 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. 1.0.0)'
+        required: true
+        default: '1.0.0'
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-windows:
+    name: Build Windows (x86_64)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Determine version
+        id: get_version
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Package Windows
+        shell: pwsh
+        run: |
+          ./scripts/package-windows.ps1 -Version ${{ steps.get_version.outputs.version }}
+
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-packages
+          path: |
+            dist/*.zip
+            dist/SHA256SUMS-windows.txt
+
+  build-macos:
+    name: Build macOS (Universal: Apple Silicon + Intel)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin, x86_64-apple-darwin
+
+      - name: Determine version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Package macOS Universal
+        run: |
+          chmod +x scripts/package-macos.sh
+          ./scripts/package-macos.sh "${{ steps.get_version.outputs.version }}" universal
+
+      - name: Upload macOS Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-packages
+          path: |
+            dist/*.dmg
+            dist/*.tar.gz
+            dist/SHA256SUMS-macos-*.txt
+
+  build-linux:
+    name: Build Linux (x86_64)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libssl-dev libxkbcommon-dev libwayland-dev \
+            libx11-dev libxcursor-dev libxrandr-dev libxi-dev libgl1-mesa-dev gnome-keyring dpkg
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Determine version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Package Linux
+        run: |
+          chmod +x scripts/package-linux.sh
+          ./scripts/package-linux.sh "${{ steps.get_version.outputs.version }}"
+
+      - name: Upload Linux Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-packages
+          path: |
+            dist/*.tar.gz
+            dist/*.deb
+            dist/SHA256SUMS-linux.txt
+
+  publish-release:
+    name: Publish GitHub Release
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+            echo "tag=v${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+            echo "tag=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Download all built artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: Consolidate SHA256 Checksums
+        run: |
+          cd release-artifacts
+          cat SHA256SUMS-*.txt > SHA256SUMS.txt 2>/dev/null || true
+          rm -f SHA256SUMS-*.txt
+          sha256sum *.* >> SHA256SUMS.txt.tmp 2>/dev/null || true
+          sort -u SHA256SUMS.txt.tmp > SHA256SUMS.txt 2>/dev/null || true
+          rm -f SHA256SUMS.txt.tmp
+          cat SHA256SUMS.txt
+
+      - name: Create or Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.get_version.outputs.tag }}
+          name: PromptMan ${{ steps.get_version.outputs.tag }}
+          draft: false
+          prerelease: false
+          files: |
+            release-artifacts/*.zip
+            release-artifacts/*.dmg
+            release-artifacts/*.tar.gz
+            release-artifacts/*.deb
+            release-artifacts/SHA256SUMS.txt
+          generate_release_notes: true

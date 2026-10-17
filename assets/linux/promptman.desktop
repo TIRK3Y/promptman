@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=PromptMan
+GenericName=LLM Workbench
+Comment=Compare cloud and local LLMs side by side, with token, cost and quality tracking
+Exec=promptman
+Icon=promptman
+Terminal=false
+Categories=Development;Utility;
+Keywords=llm;prompt;ai;ollama;openai;gemini;anthropic;
+StartupWMClass=promptman

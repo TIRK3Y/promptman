@@ -10,6 +10,7 @@ on:
         description: 'Release version (e.g. 1.0.0)'
         required: true
         default: '1.0.0'
+        type: string
 
 permissions:
   contents: write
@@ -51,18 +52,17 @@ jobs:
             dist/SHA256SUMS-windows.txt
 
   build-macos:
-    name: Build macOS (Universal: Apple Silicon + Intel)
+    name: "Build macOS (Universal: Apple Silicon + Intel)"
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: aarch64-apple-darwin, x86_64-apple-darwin
 
       - name: Determine version
         id: get_version
+        shell: bash
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
@@ -71,6 +71,7 @@ jobs:
           fi
 
       - name: Package macOS Universal
+        shell: bash
         run: |
           chmod +x scripts/package-macos.sh
           ./scripts/package-macos.sh "${{ steps.get_version.outputs.version }}" universal
@@ -101,6 +102,7 @@ jobs:
 
       - name: Determine version
         id: get_version
+        shell: bash
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
@@ -109,6 +111,7 @@ jobs:
           fi
 
       - name: Package Linux
+        shell: bash
         run: |
           chmod +x scripts/package-linux.sh
           ./scripts/package-linux.sh "${{ steps.get_version.outputs.version }}"
@@ -126,11 +129,14 @@ jobs:
     name: Publish GitHub Release
     needs: [build-windows, build-macos, build-linux]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
       - name: Determine version
         id: get_version
+        shell: bash
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
@@ -147,6 +153,7 @@ jobs:
           merge-multiple: true
 
       - name: Consolidate SHA256 Checksums
+        shell: bash
         run: |
           cd release-artifacts
           cat SHA256SUMS-*.txt > SHA256SUMS.txt 2>/dev/null || true
@@ -158,6 +165,8 @@ jobs:
 
       - name: Create or Update GitHub Release
         uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ steps.get_version.outputs.tag }}
           name: PromptMan ${{ steps.get_version.outputs.tag }}
